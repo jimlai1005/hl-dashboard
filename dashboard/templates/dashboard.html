@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>績效儀表 · Hyperliquid 實盤</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Hyperliquid 實盤績效</h1>
+      <div class="wallet">錢包 {{ wallet[:6] }}…{{ wallet[-4:] }}</div>
+    </div>
+    <div class="asof">
+      <span id="sourceBadge" class="badge">載入中…</span>
+      <div id="asOf" class="asof-time"></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="chart-card">
+      <h2>帳戶淨值曲線（USD）</h2>
+      <canvas id="equityChart" height="120"></canvas>
+    </section>
+
+    <section id="cards" class="cards"></section>
+
+    <section id="methodology" class="methodology">
+      <h3>方法論與樣本揭露</h3>
+      <p id="methodologyText"></p>
+    </section>
+  </main>
+
+  <div id="errorState" class="error hidden">
+    <p>目前無法取得績效資料（即時與快取皆不可用）。請稍後再試。</p>
+  </div>
+
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
