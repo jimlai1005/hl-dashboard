@@ -71,7 +71,8 @@ function renderCards(m) {
 }
 
 function renderMethodology(m) {
-  let txt = `本記錄涵蓋 ${m.n_days} 個交易日（${m.start} → ${m.end}）。` +
+  let txt = `本記錄以真實入金本金 ${usd(m.start_equity)} 起算（鏈上 deposit 可驗證），` +
+    `涵蓋 ${m.n_days} 個交易日（${m.start} → ${m.end}）。` +
     `Sharpe 為 ${m.sharpe.toFixed(2)}，標準誤 ±${m.sharpe_se.toFixed(2)}（Lo 2002, iid 近似）。` +
     `指標以 365 日/年、無風險利率 0% 之加密慣例年化。`;
   if (m.n_days < 60) {

@@ -69,3 +69,41 @@ def test_metrics_and_equity_share_one_source(monkeypatch, tmp_path):
     assert data.metrics["start_equity"] == pytest.approx(data.equity[0])
     assert data.metrics["end_equity"] == pytest.approx(data.equity[-1])
     assert data.metrics["n_days"] == len(data.equity) - 1
+
+
+# 鏈上首筆已含首日獲利（1007.26）的情境：真實入金本金較低
+FAKE_PORTFOLIO_GAINED = [
+    ["allTime", {"accountValueHistory": [
+        [0,           "1007.26"],   # 06-16 EOD，已含首日獲利
+        [86400000,    "1017.31"],
+        [172800000,   "1042.91"],
+    ]}],
+]
+
+
+def test_principal_anchors_first_point_and_keeps_cache_truthful(monkeypatch, tmp_path):
+    """本金錨定：曲線起點對齊真實入金本金，末點不動，且快取保留真實鏈上值。"""
+    monkeypatch.setattr(htr, "fetch_portfolio", lambda addr: FAKE_PORTFOLIO_GAINED)
+    csv_path = tmp_path / "equity_curve.csv"
+
+    data = dp.get_dashboard_data("0xabc", csv_path=str(csv_path), principal=1000.0)
+
+    assert data.equity[0] == 1000.0                      # 起點錨回本金
+    assert data.metrics["start_equity"] == 1000.0
+    assert data.equity[-1] == pytest.approx(1042.91)     # 末點不受影響
+    assert data.metrics["total_return"] == pytest.approx(1042.91 / 1000.0 - 1)
+
+    # 快取檔保留真實鏈上首筆（未被本金錨定汙染）
+    rows = list(_csv.DictReader(open(csv_path)))
+    assert float(rows[0]["account_value_usd"]) == pytest.approx(1007.26)
+
+
+def test_default_principal_is_1000(monkeypatch, tmp_path):
+    """預設本金即 $1000（不傳 principal 也會錨定）。"""
+    assert dp.PRINCIPAL == 1000.0
+    monkeypatch.setattr(htr, "fetch_portfolio", lambda addr: FAKE_PORTFOLIO_GAINED)
+    csv_path = tmp_path / "equity_curve.csv"
+
+    data = dp.get_dashboard_data("0xabc", csv_path=str(csv_path))
+
+    assert data.equity[0] == 1000.0
