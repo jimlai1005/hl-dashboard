@@ -107,3 +107,35 @@ def test_default_principal_is_1000(monkeypatch, tmp_path):
     data = dp.get_dashboard_data("0xabc", csv_path=str(csv_path))
 
     assert data.equity[0] == 1000.0
+
+
+def test_get_benchmarks_rebases_and_aligns(monkeypatch):
+    days = ["2026-06-16", "2026-06-17", "2026-06-18"]
+    fake = {
+        "BTC": [("2026-06-16", 100.0), ("2026-06-17", 110.0), ("2026-06-18", 90.0)],
+        "xyz:XYZ100": [("2026-06-16", 50.0), ("2026-06-17", 55.0), ("2026-06-18", 60.0)],
+    }
+    monkeypatch.setattr(dp, "_fetch_candles", lambda coin, t0, t1: fake[coin])
+
+    out = dp.get_benchmarks(days, base=1000.0)
+
+    assert len(out["BTC"]) == len(days)
+    assert out["BTC"][0] == 1000.0                    # 首點 == base
+    assert out["BTC"][1] == pytest.approx(1100.0)     # 110/100 * 1000
+    assert out["BTC"][2] == pytest.approx(900.0)      # 90/100 * 1000
+    assert out["XYZ100"][0] == 1000.0
+    assert out["XYZ100"][2] == pytest.approx(1200.0)  # 60/50 * 1000
+
+
+def test_get_benchmarks_forward_fills_missing_day(monkeypatch):
+    days = ["2026-06-16", "2026-06-17", "2026-06-18"]
+    fake = {  # BTC 缺 06-17
+        "BTC": [("2026-06-16", 100.0), ("2026-06-18", 120.0)],
+        "xyz:XYZ100": [("2026-06-16", 50.0), ("2026-06-17", 55.0), ("2026-06-18", 60.0)],
+    }
+    monkeypatch.setattr(dp, "_fetch_candles", lambda coin, t0, t1: fake[coin])
+
+    out = dp.get_benchmarks(days, base=1000.0)
+
+    assert out["BTC"][1] == out["BTC"][0]             # 缺日沿用前一日收盤
+    assert out["BTC"][2] == pytest.approx(1200.0)     # 120/100 * 1000

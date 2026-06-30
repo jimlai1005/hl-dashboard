@@ -85,3 +85,55 @@ def get_dashboard_data(address: str, csv_path: str = CSV_PATH,
         source=source,
         as_of=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
+
+
+# --------------------------------------------------------------------------
+# Benchmark（BTC / 美股大盤）— 與淨值曲線疊圖比較
+# 顯示鍵 -> Hyperliquid candleSnapshot 的 coin 名
+# --------------------------------------------------------------------------
+BENCHMARKS = {"BTC": "BTC", "XYZ100": "xyz:XYZ100"}
+
+
+def _fetch_candles(coin: str, t0_ms: int, t1_ms: int):
+    """打 candleSnapshot 取日線收盤。唯一碰網路（candle）；回 [(YYYY-MM-DD, close)]。"""
+    body = {"type": "candleSnapshot",
+            "req": {"coin": coin, "interval": "1d",
+                    "startTime": int(t0_ms), "endTime": int(t1_ms)}}
+    resp = htr.requests.post(htr.INFO_URL,
+                             headers={"Content-Type": "application/json"},
+                             json=body, timeout=20)
+    resp.raise_for_status()
+    out = []
+    for c in resp.json():
+        day = str(np.datetime64(int(c["t"]), "ms").astype("datetime64[D]"))
+        out.append((day, float(c["c"])))
+    return out
+
+
+def _days_to_ms_range(days):
+    """由日期字串清單推導 candleSnapshot 的 [t0, t1] ms（首日 00:00 ~ 末日 23:59:59.999）。"""
+    d0 = np.datetime64(days[0], "D").astype("datetime64[ms]").astype("int64")
+    d1 = (np.datetime64(days[-1], "D") + np.timedelta64(1, "D")
+          ).astype("datetime64[ms]").astype("int64") - 1
+    return int(d0), int(d1)
+
+
+def get_benchmarks(days, base):
+    """回 {"BTC": [...], "XYZ100": [...]}：各 benchmark 抓 candle、以 days 日期對齊
+    （缺日 forward-fill），再 rebase 到 base（首點 == base）。"""
+    t0, t1 = _days_to_ms_range(days)
+    result = {}
+    for key, coin in BENCHMARKS.items():
+        by_day = {d: c for d, c in _fetch_candles(coin, t0, t1)}
+        aligned, last = [], None
+        for day in days:
+            if day in by_day:
+                last = by_day[day]
+            aligned.append(last)
+        first_valid = next((v for v in aligned if v is not None), None)
+        if first_valid is None:
+            raise ValueError(f"benchmark {coin} 無任何收盤資料")
+        aligned = [v if v is not None else first_valid for v in aligned]
+        c0 = aligned[0]
+        result[key] = [round(base * v / c0, 6) for v in aligned]
+    return result
