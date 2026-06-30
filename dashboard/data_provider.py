@@ -91,7 +91,7 @@ def get_dashboard_data(address: str, csv_path: str = CSV_PATH,
 # Benchmark（BTC / 美股大盤）— 與淨值曲線疊圖比較
 # 顯示鍵 -> Hyperliquid candleSnapshot 的 coin 名
 # --------------------------------------------------------------------------
-BENCHMARKS = {"BTC": "BTC", "XYZ100": "xyz:XYZ100"}
+BENCHMARKS = {"BTC": "BTC", "ETH": "ETH", "SP500": "xyz:SP500", "GOLD": "xyz:GOLD"}
 
 
 def _fetch_candles(coin: str, t0_ms: int, t1_ms: int):

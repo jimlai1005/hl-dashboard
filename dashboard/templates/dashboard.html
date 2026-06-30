@@ -24,8 +24,10 @@
       <h2>帳戶淨值曲線（USD）</h2>
       <div class="bench-controls">
         <span class="bench-label">疊加對照：</span>
-        <label class="toggle"><input type="checkbox" id="toggleBTC"> BTC</label>
-        <label class="toggle"><input type="checkbox" id="toggleXYZ100"> 美股大盤</label>
+        <label class="toggle"><input type="checkbox" id="toggleBTC"> BTC <span class="chip" id="chipBTC"></span></label>
+        <label class="toggle"><input type="checkbox" id="toggleETH"> ETH <span class="chip" id="chipETH"></span></label>
+        <label class="toggle"><input type="checkbox" id="toggleSP500"> S&amp;P 500（xyz:SP500） <span class="chip" id="chipSP500"></span></label>
+        <label class="toggle"><input type="checkbox" id="toggleGOLD"> 黃金（xyz:GOLD） <span class="chip" id="chipGOLD"></span></label>
         <span id="benchNotice" class="bench-notice"></span>
       </div>
       <canvas id="equityChart" height="120"></canvas>

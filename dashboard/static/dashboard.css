@@ -31,3 +31,4 @@ main { max-width:1080px; margin:0 auto; padding:24px 32px 48px; }
 .toggle { color:var(--txt); font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
 .toggle input { accent-color:var(--accent); cursor:pointer; }
 .bench-notice { color:#f85149; font-size:12px; }
+.chip { display:inline-block; width:11px; height:11px; border-radius:2px; vertical-align:middle; }

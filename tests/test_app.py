@@ -59,7 +59,7 @@ def test_api_benchmark_shape(client, monkeypatch):
     assert r.status_code == 200
     body = r.get_json()
     assert set(["days", "series", "base"]).issubset(body)
-    assert set(body["series"]) == {"BTC", "XYZ100"}
+    assert set(body["series"]) == {"BTC", "ETH", "SP500", "GOLD"}
     assert body["series"]["BTC"][0] == body["base"]   # 首點 == base
 
 
@@ -75,5 +75,5 @@ def test_api_benchmark_upstream_failure_returns_503(client, monkeypatch):
 
 def test_index_has_benchmark_toggles(client):
     r = client.get("/")
-    assert b'id="toggleBTC"' in r.data
-    assert b'id="toggleXYZ100"' in r.data
+    for tid in ("toggleBTC", "toggleETH", "toggleSP500", "toggleGOLD"):
+        assert f'id="{tid}"'.encode() in r.data
