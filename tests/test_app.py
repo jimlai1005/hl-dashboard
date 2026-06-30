@@ -71,3 +71,9 @@ def test_api_benchmark_upstream_failure_returns_503(client, monkeypatch):
     r = client.get("/api/benchmark")
     assert r.status_code == 503
     assert "error" in r.get_json()
+
+
+def test_index_has_benchmark_toggles(client):
+    r = client.get("/")
+    assert b'id="toggleBTC"' in r.data
+    assert b'id="toggleXYZ100"' in r.data

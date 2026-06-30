@@ -1,3 +1,10 @@
+let chart = null;
+let benchmarkLoaded = false;
+const BENCH_META = {
+  BTC:    { label: "BTC（rebased $1,000）",                          color: "#f7931a" },
+  XYZ100: { label: "美股大盤 xyz:XYZ100（rebased $1,000，S&P 500 近似）", color: "#58a6ff" },
+};
+
 const pct = (x) => (x * 100).toFixed(2) + "%";
 const usd = (x) => "$" + x.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const sign = (x) => (x >= 0 ? "pos" : "neg");
@@ -17,6 +24,10 @@ async function load() {
   renderChart(data);
   renderCards(data.metrics);
   renderMethodology(data.metrics);
+  document.getElementById("toggleBTC").addEventListener("change",
+    (e) => onToggle("BTC", e.target.checked, e.target));
+  document.getElementById("toggleXYZ100").addEventListener("change",
+    (e) => onToggle("XYZ100", e.target.checked, e.target));
 }
 
 function renderBadge(d) {
@@ -27,7 +38,7 @@ function renderBadge(d) {
 }
 
 function renderChart(d) {
-  new Chart(document.getElementById("equityChart"), {
+  chart = new Chart(document.getElementById("equityChart"), {
     type: "line",
     data: {
       labels: d.days,
@@ -84,6 +95,43 @@ function renderMethodology(m) {
       `若屬實將改用資金加權（時間加權）報酬重算。`;
   }
   document.getElementById("methodologyText").textContent = txt;
+}
+
+async function ensureBenchmarks() {
+  if (benchmarkLoaded) return;
+  const r = await fetch("/api/benchmark");
+  if (!r.ok) throw new Error("benchmark unavailable");
+  const b = await r.json();
+  for (const key of ["BTC", "XYZ100"]) {
+    chart.data.datasets.push({
+      label: BENCH_META[key].label,
+      data: b.series[key],
+      borderColor: BENCH_META[key].color,
+      borderDash: [6, 4], borderWidth: 2, pointRadius: 0,
+      fill: false, tension: 0.25, hidden: true, _benchKey: key,
+    });
+  }
+  benchmarkLoaded = true;
+  chart.update();
+}
+
+async function onToggle(key, checked, el) {
+  const notice = document.getElementById("benchNotice");
+  if (checked) {
+    el.disabled = true;
+    try {
+      await ensureBenchmarks();
+    } catch (e) {
+      el.checked = false;
+      notice.textContent = "benchmark 暫時無法載入";
+      el.disabled = false;
+      return;
+    }
+    el.disabled = false;
+  }
+  notice.textContent = "";
+  const ds = chart.data.datasets.find((d) => d._benchKey === key);
+  if (ds) { ds.hidden = !checked; chart.update(); }
 }
 
 load();
