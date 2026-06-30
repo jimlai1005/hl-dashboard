@@ -1,8 +1,10 @@
 let chart = null;
 let benchmarkLoaded = false;
 const BENCH_META = {
-  BTC:    { label: "BTC（rebased $1,000）",                          color: "#f7931a" },
-  XYZ100: { label: "美股大盤 xyz:XYZ100（rebased $1,000，S&P 500 近似）", color: "#58a6ff" },
+  BTC:   { label: "BTC（rebased $1,000）",                color: "#f7931a" },
+  ETH:   { label: "ETH（rebased $1,000）",                color: "#627eea" },
+  SP500: { label: "S&P 500 xyz:SP500（rebased $1,000）",  color: "#58a6ff" },
+  GOLD:  { label: "黃金 xyz:GOLD（rebased $1,000）",       color: "#e3b341" },
 };
 
 const pct = (x) => (x * 100).toFixed(2) + "%";
@@ -24,10 +26,12 @@ async function load() {
   renderChart(data);
   renderCards(data.metrics);
   renderMethodology(data.metrics);
-  document.getElementById("toggleBTC").addEventListener("change",
-    (e) => onToggle("BTC", e.target.checked, e.target));
-  document.getElementById("toggleXYZ100").addEventListener("change",
-    (e) => onToggle("XYZ100", e.target.checked, e.target));
+  for (const key of Object.keys(BENCH_META)) {
+    document.getElementById("toggle" + key).addEventListener("change",
+      (e) => onToggle(key, e.target.checked, e.target));
+    // 辨識方塊與線同色（單一來源 BENCH_META），截圖也能一眼分辨
+    document.getElementById("chip" + key).style.background = BENCH_META[key].color;
+  }
 }
 
 function renderBadge(d) {
@@ -102,7 +106,7 @@ async function ensureBenchmarks() {
   const r = await fetch("/api/benchmark");
   if (!r.ok) throw new Error("benchmark unavailable");
   const b = await r.json();
-  for (const key of ["BTC", "XYZ100"]) {
+  for (const key of Object.keys(BENCH_META)) {
     chart.data.datasets.push({
       label: BENCH_META[key].label,
       data: b.series[key],
