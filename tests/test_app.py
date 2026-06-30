@@ -48,3 +48,32 @@ def test_unavailable_returns_503(monkeypatch, tmp_path):
     r = app.test_client().get("/api/dashboard")
     assert r.status_code == 503
     assert "error" in r.get_json()
+
+
+def test_api_benchmark_shape(client, monkeypatch):
+    # client fixture 的 FAKE_PORTFOLIO 產生的 days 為 1970-01-01..03（ms 0/86400000/172800000）
+    candles = [("1970-01-01", 100.0), ("1970-01-02", 110.0), ("1970-01-03", 90.0)]
+    monkeypatch.setattr(dp, "_fetch_candles", lambda coin, t0, t1: candles)
+
+    r = client.get("/api/benchmark")
+    assert r.status_code == 200
+    body = r.get_json()
+    assert set(["days", "series", "base"]).issubset(body)
+    assert set(body["series"]) == {"BTC", "XYZ100"}
+    assert body["series"]["BTC"][0] == body["base"]   # 首點 == base
+
+
+def test_api_benchmark_upstream_failure_returns_503(client, monkeypatch):
+    def _boom(coin, t0, t1):
+        raise ConnectionError("boom")
+    monkeypatch.setattr(dp, "_fetch_candles", _boom)
+
+    r = client.get("/api/benchmark")
+    assert r.status_code == 503
+    assert "error" in r.get_json()
+
+
+def test_index_has_benchmark_toggles(client):
+    r = client.get("/")
+    assert b'id="toggleBTC"' in r.data
+    assert b'id="toggleXYZ100"' in r.data
