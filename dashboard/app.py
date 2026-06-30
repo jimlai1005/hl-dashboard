@@ -52,4 +52,17 @@ def create_app(address: str | None = None, csv_path: str | None = None) -> Flask
             return jsonify({"error": str(e)}), 503
         return jsonify({"metrics": d.metrics, "source": d.source, "as_of": d.as_of})
 
+    @app.route("/api/benchmark")
+    def api_benchmark():
+        try:
+            d = _load()
+        except dp.DashboardDataUnavailable as e:
+            return jsonify({"error": str(e)}), 503
+        try:
+            series = dp.get_benchmarks(d.days, d.metrics["start_equity"])
+        except Exception as e:  # 上游 candle 抓取/解析失敗 → 大聲回 503（全域原則 #3）
+            return jsonify({"error": f"benchmark 取得失敗: {e}"}), 503
+        return jsonify({"days": d.days, "series": series,
+                        "base": d.metrics["start_equity"]})
+
     return app
